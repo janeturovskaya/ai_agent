@@ -1,49 +1,64 @@
 import os
 import subprocess
-import sys
+from google.genai import types
 
 
-def run_python_file(working_directory, file_path, args=[]):
-	working_directory_path = os.path.abspath(working_directory)
-	file_path_abs = os.path.abspath(os.path.join(working_directory_path, file_path))
+def run_python_file(working_directory, file_path, args=None):
+    abs_working_dir = os.path.abspath(working_directory)
+    abs_file_path = os.path.abspath(os.path.join(working_directory, file_path))
+    if not abs_file_path.startswith(abs_working_dir):
+        return f'Error: Cannot execute "{file_path}" as it is outside the permitted working directory'
+    if not os.path.exists(abs_file_path):
+        return f'Error: File "{file_path}" not found.'
+    if not file_path.endswith(".py"):
+        return f'Error: "{file_path}" is not a Python file.'
+    try:
+        commands = ["python", abs_file_path]
+        if args:
+            commands.extend(args)
+        result = subprocess.run(
+            commands,
+            capture_output=True,
+            text=True,
+            timeout=30,
+            cwd=abs_working_dir,
+        )
+        output = []
+        if result.stdout:
+            output.append(f"STDOUT:\n{result.stdout}")
+        if result.stderr:
+            output.append(f"STDERR:\n{result.stderr}")
 
-	try:
-		if os.path.commonpath([file_path_abs, working_directory_path]) != working_directory_path:
-			return f'Error: Cannot execute "{file_path}" as it is outside the permitted working directory'
-	except Exception:
-		# In case commonpath raises on different drives, treat as outside
-		return f'Error: Cannot execute "{file_path}" as it is outside the permitted working directory'
+        if result.returncode != 0:
+            output.append(f"Process exited with code {result.returncode}")
 
-
-	if not os.path.exists(file_path_abs):
-			return f'Error: File "{file_path}" not found.'
-
-
-	if not file_path_abs.endswith('.py'):
-		return f'Error: "{file_path}" is not a Python file.'
-
-	extra_args = list(args) if args is not None else []
-	try:
-		completed_process = subprocess.run(
-			[sys.executable, file_path_abs, *extra_args],
-			cwd=working_directory_path,
-			stdout=subprocess.PIPE,
-			stderr=subprocess.PIPE,
-			text=True,
-			timeout=30)
-		if not completed_process.stdout:
-			stdout_string = "No output produced."
-		else:
-			stdout_string = f"STDOUT:{completed_process.stdout}"
-
-		stderr_string = f"STDERR:{completed_process.stderr}"
-
-		return f"{stderr_string}\n{stdout_string}"
+        return "\n".join(output) if output else "No output produced."
+    except Exception as e:
+        return f"Error: executing Python file: {e}"
 
 
-
-	except Exception as e:
-		return f"Error: executing Python file: {e}"
+schema_run_python_file = types.FunctionDeclaration(
+    name="run_python_file",
+    description="Executes a Python file within the working directory and returns the output from the interpreter.",
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "file_path": types.Schema(
+                type=types.Type.STRING,
+                description="Path to the Python file to execute, relative to the working directory.",
+            ),
+            "args": types.Schema(
+                type=types.Type.ARRAY,
+                items=types.Schema(
+                    type=types.Type.STRING,
+                    description="Optional arguments to pass to the Python file.",
+                ),
+                description="Optional arguments to pass to the Python file.",
+            ),
+        },
+        required=["file_path"],
+    ),
+)
 
 
 
