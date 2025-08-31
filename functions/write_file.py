@@ -7,23 +7,23 @@ def write_file(working_directory, file_path, content):
 	file_path_abs = os.path.join(working_directory_path, file_path)
 
 	if not file_path_abs.startswith(working_directory_path):
-		return f'Error: Cannot write to "{file_path}" as it is outside the permitted working directory'
+		return f'Tool: Error: Cannot write to "{file_path}" as it is outside the permitted working directory'
 
 	if not os.path.exists(file_path_abs):
 		try:
 			os.makedirs(os.path.dirname(file_path_abs), exist_ok=True)
 		except Exception as e:
-			return f"Error: creating directory: {e}"
+			return f"Tool: Error: creating directory: {e}"
 	if os.path.exists(file_path_abs) and os.path.isdir(file_path_abs):
-		return f'Error: "{file_path}" is a directory, not a file'
+		return f'Tool: Error: "{file_path}" is a directory, not a file'
 	try:
 		with open(file_path_abs, "w") as f:
 			f.write(content)
 		return (
-			f'Successfully wrote to "{file_path}" ({len(content)} characters written)'
+			f'Tool: Successfully wrote to "{file_path}" ({len(content)} characters written)'
 		)
 	except Exception as e:
-		return f"Error: writing to file: {e}"
+		return f"Tool: Error: writing to file: {e}"
 
 schema_write_file = types.FunctionDeclaration(
     name="write_file",
@@ -31,10 +31,10 @@ schema_write_file = types.FunctionDeclaration(
     parameters=types.Schema(
         type=types.Type.OBJECT,
         properties={
-            "directory": types.Schema(
-                type=types.Type.STRING,
-                description= "Base directory to constrain writes (default: current working dir)."
-            ),
+            # "directory": types.Schema(
+            #     type=types.Type.STRING,
+            #     description= "Base directory to constrain writes (default: current working dir)."
+            # ),
 	        "file_path": types.Schema(
 		        type=types.Type.STRING,
 		        description="Path to the file to write, relative to working_directory."

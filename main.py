@@ -15,26 +15,24 @@ def generate_content(client, messages, verbose):
                                                   tools=[available_functions],
                                                   system_instruction=system_prompt
                                               ))
-    if verbose:
-        print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}\n"
-              f"Response tokens: {response.usage_metadata.candidates_token_count}")
+    return response
 
-    for candidate in response.candidates:
-        messages.append(candidate.content)
 
-    if not response.function_calls:
-        return response.text
+def get_tool_response(response, verbose):
+
+    tool_response = []
 
     for fc in response.function_calls:
         function_call_result = call_function(fc, verbose)
-
-        messages.append(function_call_result.types.Content(role='user'))
+        tool_response.append(function_call_result)
 
         if not function_call_result.parts[0].function_response.response:
-            raise Exception("Fatal error")
+            raise Exception("Tool: Fatal error")
 
         if verbose:
             print(f"-> {function_call_result.parts[0].function_response.response}")
+
+    return tool_response
 
 
 def main():
@@ -61,18 +59,30 @@ def main():
         types.Content(role="user", parts=[types.Part(text=user_prompt)]),
     ]
 
+    iterations = 0
     while True:
-        response = client.models.generate_content(model="gemini-2.0-flash-001",
-                                                  contents=messages,
-                                                  config=types.GenerateContentConfig(
-                                                      tools=[available_functions],
-                                                      system_instruction=system_prompt
-                                                  ))
-
-        messages.append({"role": "assistant", "text": response.text})
-        messages.append({"role": "tool", "text": get_updated_description(response)})
+        response = generate_content(client, messages, verbose)
 
 
+        if verbose:
+            print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}\n"
+                      f"Response tokens: {response.usage_metadata.candidates_token_count}")
+
+        content = response.candidates[0].content
+        messages.append(content)
+
+        if not response.function_calls:
+            print(response.text)
+            break
+
+        tool_response = get_tool_response(response, verbose)
+        for response in tool_response:
+            messages.append(response)
+
+        iterations += 1
+        if iterations > 5:
+            print("You've exceeded max iterations")
+            break
 
 
 if __name__ == "__main__":

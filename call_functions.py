@@ -14,17 +14,17 @@ available_functions = types.Tool(
     )
 
 def call_function(function_call_part, verbose=False):
-    if not hasattr(function_call_part, "function_call") or function_call_part.function_call is None:
-        raise ValueError("call_function expected a Part with function_call")
+    # if not hasattr(function_call_part, "function_call") or function_call_part.function_call is None:
+    #     raise ValueError("Tool: call_function expected a Part with function_call")
 
-    args = dict(function_call_part.args or {})
+    args = dict(function_call_part.args or {}) #{'file_path': 'render.py', 'directory': 'pkg'}
     args['working_directory'] = "./calculator"
 
     if verbose:
         args_str = ", ".join(f"{k}={v!r}" for k, v in args.items())
-        print(f"Calling function: {function_call_part.name}({args_str})")
+        print(f"Tool: Calling function: {function_call_part.name}({args_str})")
     else:
-        print(f" - Calling function: {function_call_part.name}")
+        print(f"Tool: - Calling function: {function_call_part.name}")
 
     match function_call_part.name:
         case 'get_file_content':

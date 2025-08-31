@@ -9,12 +9,10 @@ def get_files_info(working_directory, directory="."):
 
 
 	if not directory_path.startswith(working_directory_path):
-		print( f'Error: Cannot list "{directory}" as it is outside the permitted working directory')
-		return
+		return f'Tool: Error: Cannot list "{directory}" as it is outside the permitted working directory'
 
 	if not os.path.isdir(directory_path):
-		print (f'Error: "{directory}" is not a directory')
-		return
+		return f'Tool: Error: "{directory}" is not a directory'
 
 	try:
 		files_info = []
@@ -26,9 +24,11 @@ def get_files_info(working_directory, directory="."):
 			files_info.append(
 				f"- {filename}: file_size={file_size} bytes, is_dir={is_dir}"
 			)
-		print ('\n'.join(files_info))
+		res = '\n'.join(files_info)
+		return f'Tool: {res}'
+
 	except Exception as e:
-		return f"Error listing files: {e}"
+		return f"Tool: Error listing files: {e}"
 
 schema_get_files_info = types.FunctionDeclaration(
     name="get_files_info",
